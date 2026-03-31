@@ -12,7 +12,7 @@ Automate number selection and series submission on the [Melate Retro](https://mi
 - **1–6 series** per execution (flexible, not fixed at 6).
 - **Automatic validation** — verifies the added series match the input before proceeding.
 - **Auto-clicks "Comprar"** after adding and validating all series.
-- **Error feedback** — validation errors shown via `alert()` and `console.log()`.
+- **Error feedback** — validation errors shown inline in the modal and in `console.log()`.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ Automate number selection and series submission on the [Melate Retro](https://mi
 
 1. **Log in** to your [MiLoteria](https://miloteria.mx/) account manually.
 2. Navigate to the **Melate Retro** page: [https://miloteria.mx/melate-retro](https://miloteria.mx/melate-retro).
-3. A **prompt dialog** will appear automatically after the page loads (~1.5 seconds).
+3. A **modal dialog with a textarea** will appear automatically after the page loads (~1.5 seconds).
 4. **Paste your series** into the prompt. You can mix formats, one series per line:
 
    ```text
@@ -60,7 +60,7 @@ Automate number selection and series submission on the [Melate Retro](https://mi
    2,13,15,23,28,37
    ```
 
-5. Click **OK**. The script will:
+5. Click **Fill Series** (or press `Ctrl+Enter`). The script will:
    - Select the 6 numbers for each series.
    - Click "Agregar" to add each series.
    - Validate all series in the "Mis combinaciones" table.
@@ -79,15 +79,22 @@ The script validates each series:
 | Max series | 6 (Melate Retro limit) |
 | Min series | 1 |
 
-Invalid input will show an error `alert()` with details about the problem.
+Invalid input will show an inline error in the modal with details about the problem.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Enter` | Submit the series |
+| `Escape` | Cancel / close the modal |
 
 ## Troubleshooting
 
-### The prompt does not appear
+### The modal does not appear
 
 - Ensure Tampermonkey is enabled (click the icon → check the toggle).
 - Ensure the script is enabled in Tampermonkey's dashboard.
-- Refresh the page and wait ~2 seconds for the prompt.
+- Refresh the page and wait ~2 seconds for the modal.
 
 ### Numbers are not being selected
 

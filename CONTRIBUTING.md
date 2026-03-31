@@ -29,7 +29,10 @@ Numbers 1–39 are laid out in a `<table>` with 4 columns (1–9, 10–19, 20–
 
 **Selector to find a number**: `td.number-container input[value="${num}"]`
 
-When a number is selected, the `<td>` gets additional styling classes indicating the active state.
+**Important**: The Vue click handler is on the `<label>` element, NOT the `<td>`. Clicking the `<td>` directly does **not** trigger Vue's reactive system. You must use:
+```javascript
+input.closest("label").click();
+```
 
 #### Action Buttons
 

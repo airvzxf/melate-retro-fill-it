@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Melate Retro Fill-It
 // @namespace    https://github.com/airvzxf/melate-retro-fill-it
-// @version      1.0.0
+// @version      1.1.0
 // @description  Automate number selection and series submission on Melate Retro lottery page.
 // @author       airvzxf
 // @match        https://miloteria.mx/melate-retro*
@@ -10,7 +10,7 @@
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
-<New userscript></New>
+
 (function () {
     "use strict";
 
@@ -28,14 +28,6 @@
      */
     function log(...args) {
         console.log(SCRIPT_PREFIX, ...args);
-    }
-
-    /**
-     * Log a warning to the console with the script prefix.
-     * @param  {...any} args - Arguments to log.
-     */
-    function warn(...args) {
-        console.warn(SCRIPT_PREFIX, ...args);
     }
 
     /**
@@ -170,6 +162,8 @@
 
     /**
      * Click a number cell in the selection grid.
+     * The Vue event handler is on the <label> element, not the <td>.
+     * Clicking the <td> directly does NOT trigger Vue's reactive system.
      * @param {number} num - The number to select (1-39).
      * @returns {boolean} True if the number was found and clicked.
      */
@@ -181,12 +175,12 @@
             error(`Number ${num} not found in the grid.`);
             return false;
         }
-        const cell = input.closest("td");
-        if (!cell) {
-            error(`Could not find parent cell for number ${num}.`);
+        const label = input.closest("label");
+        if (!label) {
+            error(`Could not find parent label for number ${num}.`);
             return false;
         }
-        cell.click();
+        label.click();
         return true;
     }
 
@@ -206,6 +200,8 @@
 
     /**
      * Read the current series from the "Mis combinaciones" table.
+     * Uses the scoped selector ".table-container table tr" to avoid
+     * matching the number grid or other tables on the page.
      * @returns {string[]} Array of combination strings (e.g., ["3-15-23-24-28-32"]).
      */
     function readCombinationsTable() {
@@ -323,9 +319,220 @@
     }
 
     /**
-     * Entry point: show prompt and execute automation on the Melate Retro page.
+     * Create and display a custom modal dialog with a textarea for multi-line input.
+     * Returns a Promise that resolves with the textarea content or null if cancelled.
+     * @returns {Promise<string|null>}
      */
-    function main() {
+    function showInputModal() {
+        return new Promise((resolve) => {
+            // Overlay background
+            const overlay = document.createElement("div");
+            overlay.id = "melate-fill-overlay";
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            `;
+
+            // Modal container
+            const modal = document.createElement("div");
+            modal.style.cssText = `
+                background: #fff;
+                border-radius: 12px;
+                padding: 24px;
+                width: 520px;
+                max-width: 90vw;
+                max-height: 90vh;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            `;
+
+            // Title
+            const title = document.createElement("h2");
+            title.textContent = "Melate Retro Fill-It";
+            title.style.cssText = `
+                margin: 0;
+                color: #c41e3a;
+                font-size: 20px;
+                font-weight: 700;
+                text-align: center;
+            `;
+
+            // Instructions
+            const instructions = document.createElement("div");
+            instructions.style.cssText = `
+                font-size: 13px;
+                color: #555;
+                line-height: 1.5;
+            `;
+            instructions.innerHTML = `
+                <p style="margin: 0 0 8px 0;">Paste your series below (one per line, max 6). Supported formats:</p>
+                <ul style="margin: 0; padding-left: 20px; list-style: disc;">
+                    <li><code>30,1621,3,15,23,24,28,32</code> — CSV with prefix</li>
+                    <li><code>&gt;&gt; 3 - 15 - 23 - 24 - 28 - 32 &lt;&lt;</code> — Arrow format</li>
+                    <li><code>3,15,23,24,28,32</code> — Plain CSV</li>
+                </ul>
+            `;
+
+            // Textarea
+            const textarea = document.createElement("textarea");
+            textarea.id = "melate-fill-input";
+            textarea.placeholder = "Paste your series here...";
+            textarea.style.cssText = `
+                width: 100%;
+                height: 180px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 12px;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 14px;
+                line-height: 1.6;
+                resize: vertical;
+                box-sizing: border-box;
+                outline: none;
+                transition: border-color 0.2s;
+            `;
+            textarea.addEventListener("focus", () => {
+                textarea.style.borderColor = "#c41e3a";
+            });
+            textarea.addEventListener("blur", () => {
+                textarea.style.borderColor = "#ddd";
+            });
+
+            // Button container
+            const btnContainer = document.createElement("div");
+            btnContainer.style.cssText = `
+                display: flex;
+                gap: 12px;
+                justify-content: flex-end;
+            `;
+
+            // Cancel button
+            const cancelBtn = document.createElement("button");
+            cancelBtn.textContent = "Cancel";
+            cancelBtn.style.cssText = `
+                padding: 10px 24px;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                background: #fff;
+                color: #666;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+            `;
+            cancelBtn.addEventListener("mouseenter", () => {
+                cancelBtn.style.borderColor = "#999";
+                cancelBtn.style.color = "#333";
+            });
+            cancelBtn.addEventListener("mouseleave", () => {
+                cancelBtn.style.borderColor = "#ccc";
+                cancelBtn.style.color = "#666";
+            });
+
+            // Submit button
+            const submitBtn = document.createElement("button");
+            submitBtn.textContent = "Fill Series";
+            submitBtn.style.cssText = `
+                padding: 10px 24px;
+                border: none;
+                border-radius: 8px;
+                background: #c41e3a;
+                color: #fff;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.2s;
+            `;
+            submitBtn.addEventListener("mouseenter", () => {
+                submitBtn.style.background = "#a01830";
+            });
+            submitBtn.addEventListener("mouseleave", () => {
+                submitBtn.style.background = "#c41e3a";
+            });
+
+            // Error display area
+            const errorDiv = document.createElement("div");
+            errorDiv.id = "melate-fill-error";
+            errorDiv.style.cssText = `
+                display: none;
+                background: #fff3f3;
+                border: 1px solid #e88;
+                border-radius: 8px;
+                padding: 10px 14px;
+                color: #c00;
+                font-size: 13px;
+                line-height: 1.4;
+            `;
+
+            // Cleanup helper
+            function cleanup() {
+                overlay.remove();
+            }
+
+            // Cancel action
+            cancelBtn.addEventListener("click", () => {
+                cleanup();
+                resolve(null);
+            });
+
+            // Submit action
+            submitBtn.addEventListener("click", () => {
+                const value = textarea.value.trim();
+                if (value.length === 0) {
+                    errorDiv.textContent = "Please paste at least one series.";
+                    errorDiv.style.display = "block";
+                    return;
+                }
+
+                // Validate before closing the modal
+                try {
+                    parseInput(value);
+                    cleanup();
+                    resolve(value);
+                } catch (err) {
+                    errorDiv.textContent = err.message;
+                    errorDiv.style.display = "block";
+                }
+            });
+
+            // Close on Escape key
+            overlay.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    cleanup();
+                    resolve(null);
+                }
+            });
+
+            // Ctrl+Enter to submit
+            textarea.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    submitBtn.click();
+                }
+            });
+
+            // Assemble the modal
+            btnContainer.append(cancelBtn, submitBtn);
+            modal.append(title, instructions, textarea, errorDiv, btnContainer);
+            overlay.append(modal);
+            document.body.append(overlay);
+
+            // Focus the textarea
+            textarea.focus();
+        });
+    }
+
+    /**
+     * Entry point: show input modal and execute automation on the Melate Retro page.
+     */
+    async function main() {
         // Only run on the Melate Retro selection page, not on `/buy`
         if (window.location.pathname.includes("/buy")) {
             log("On purchase page. Waiting for user action (Pagar or Cancelar).");
@@ -335,33 +542,26 @@
         log("Script loaded. Ready to automate Melate Retro number selection.");
 
         // Wait a moment for the page to fully render
-        setTimeout(() => {
-            const rawInput = prompt(
-                "Melate Retro Fill-It\n\n" +
-                    "Paste your series below. Supported formats:\n\n" +
-                    '1. CSV with prefix:  30,1621,3,15,23,24,28,32\n' +
-                    '2. Arrow format:     >>  3  -  15  -  23  -  24  -  28  -  32  <<\n' +
-                    '3. Plain CSV:        3,15,23,24,28,32\n\n' +
-                    "One series per line. Max 6 series."
-            );
+        await sleep(1500);
 
-            if (!rawInput || rawInput.trim().length === 0) {
-                log("No input provided. Script cancelled.");
-                return;
-            }
+        const rawInput = await showInputModal();
 
-            try {
-                const seriesList = parseInput(rawInput);
-                log(`Parsed ${seriesList.length} series successfully.`);
-                for (let i = 0; i < seriesList.length; i++) {
-                    log(`  Series ${i + 1}: [${seriesList[i].join(", ")}]`);
-                }
-                fillSeries(seriesList);
-            } catch (err) {
-                error(`Parse error: ${err.message}`);
-                alert(`Melate Retro Fill-It\n\nError: ${err.message}`);
+        if (!rawInput) {
+            log("No input provided. Script cancelled.");
+            return;
+        }
+
+        try {
+            const seriesList = parseInput(rawInput);
+            log(`Parsed ${seriesList.length} series successfully.`);
+            for (let i = 0; i < seriesList.length; i++) {
+                log(`  Series ${i + 1}: [${seriesList[i].join(", ")}]`);
             }
-        }, 1500);
+            await fillSeries(seriesList);
+        } catch (err) {
+            error(`Parse error: ${err.message}`);
+            alert(`Melate Retro Fill-It\n\nError: ${err.message}`);
+        }
     }
 
     main();
