@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Melate Retro Fill-It
 // @namespace    https://github.com/airvzxf/melate-retro-fill-it
-// @version      1.1.0
+// @version      1.1.1
 // @description  Automate number selection and series submission on Melate Retro lottery page.
 // @author       airvzxf
 // @match        https://miloteria.mx/melate-retro*
