@@ -37,6 +37,7 @@
      */
     function error(...args) {
         console.error(SCRIPT_PREFIX, ...args);
+        alert(`${SCRIPT_PREFIX}\n\n${args.join(" ")}`);
     }
 
     /**
@@ -561,7 +562,6 @@
             await fillSeries(seriesList);
         } catch (err) {
             error(`Parse error: ${err.message}`);
-            alert(`Melate Retro Fill-It\n\nError: ${err.message}`);
         }
     }
 
