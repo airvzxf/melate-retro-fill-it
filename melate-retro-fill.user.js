@@ -7,6 +7,7 @@
 // @match        https://miloteria.mx/melate-retro*
 // @match        https://miloteria.mx/buy*
 // @icon         https://miloteria.mx/favicon.ico
+// @license      AGPL-3.0-or-later
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==

@@ -111,4 +111,4 @@ If Tampermonkey is blocked or unavailable, you can run the script directly in th
 
 ## License
 
-[GNU General Public License v3.0](LICENSE)
+[GNU Affero General Public License v3.0](LICENSE)
